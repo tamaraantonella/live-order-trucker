@@ -1,18 +1,19 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   ParseIntPipe,
   Put,
   Request,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { Order } from './entities/order.entity';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthenticatedRequest } from '../types';
 
 @Controller('orders')
 export class OrdersController {
@@ -27,10 +28,10 @@ export class OrdersController {
   @Get('user/:userId')
   async getUserOrders(
     @Param('userId', ParseIntPipe) userId: number,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ): Promise<Order[]> {
     if (req.user.role !== 'delivery' && req.user.id !== userId) {
-      throw new UnauthorizedException('Unauthorized to access these orders');
+      throw new ForbiddenException('Unauthorized to access these orders');
     }
     return this.appService.getUserOrders(userId);
   }
@@ -40,10 +41,10 @@ export class OrdersController {
   async updateOrderStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ): Promise<Order> {
     if (req.user.role !== 'delivery') {
-      throw new UnauthorizedException(
+      throw new ForbiddenException(
         'Only delivery users can update order status',
       );
     }

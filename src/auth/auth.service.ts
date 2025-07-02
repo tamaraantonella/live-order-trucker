@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { UserCredentials } from '../types';
+import { AuthenticatedUser } from '../types';
 
 @Injectable()
 export class AuthService {
@@ -52,14 +52,17 @@ export class AuthService {
     });
   }
 
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<AuthenticatedUser | null> {
     return this.validateUserCredentials(email, password);
   }
 
   private async validateUserCredentials(
     email: string,
     password: string,
-  ): Promise<UserCredentials | null> {
+  ): Promise<AuthenticatedUser | null> {
     const user = await this.usersService.findByEmail(email);
 
     if (!user) {
@@ -73,8 +76,8 @@ export class AuthService {
 
     if (isPasswordValid) {
       return {
-        email: user.email,
         id: user.id,
+        email: user.email,
         role: user.role,
       };
     }
@@ -93,10 +96,7 @@ export class AuthService {
     return bcrypt.compare(plainPassword, hashedPassword);
   }
 
-  private generateTokenResponse(user: Pick<User, 'email' | 'id' | 'role'>): {
-    access_token: string;
-    user: Pick<User, 'id' | 'email' | 'role'>;
-  } {
+  private generateTokenResponse(user: AuthenticatedUser) {
     const payload = { email: user.email, sub: user.id, role: user.role };
 
     return {
